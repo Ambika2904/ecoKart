@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ecoKart — Shop with your carbon in mind</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-dark:  #27500A;
+    --green-mid:   #3B6D11;
+    --green-light: #EAF3DE;
+    --green-text:  #173404;
+    --amber-dark:  #633806;
+    --amber-mid:   #854F0B;
+    --amber-light: #FAEEDA;
+    --red-dark:    #712B13;
+    --red-mid:     #993C1D;
+    --red-light:   #FAECE7;
+    --bg:          #F4F4F2;
+    --surface:     #FFFFFF;
+    --border:      #E0DED8;
+    --text:        #1A1A1A;
+    --text-muted:  #666660;
+    --text-hint:   #999993;
+    --radius-sm:   6px;
+    --radius-md:   10px;
+    --radius-lg:   14px;
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOP BAR ── */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 58px; display: flex; align-items: center; gap: 18px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex-shrink: 0; }
+  .logo span { color: var(--green-mid); }
+  .tagline { font-size: 12px; color: var(--text-hint); flex-shrink: 0; }
+  .search-wrap { flex: 1; display: flex; max-width: 600px; }
+  .search-wrap input { flex: 1; border: 1px solid var(--border); border-right: none; border-radius: var(--radius-sm) 0 0 var(--radius-sm); padding: 9px 14px; font-size: 14px; background: var(--bg); color: var(--text); outline: none; }
+  .search-wrap input:focus { border-color: var(--green-mid); }
+  .search-wrap button { background: var(--green-mid); color: #fff; border: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+  .cart-btn { display: flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 13px; cursor: pointer; color: var(--text); margin-left: auto; white-space: nowrap; transition: background 0.15s; }
+  .cart-btn:hover { background: var(--bg); }
+  .cart-count { background: var(--green-mid); color: #fff; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* ── LAYOUT ── */
+  .layout { display: flex; min-height: calc(100vh - 58px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 16px; display: flex; flex-direction: column; gap: 22px; }
+  .sidebar-section h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-hint); margin-bottom: 10px; }
+  .filter-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; cursor: pointer; color: var(--text-muted); user-select: none; }
+  .filter-row input[type=checkbox] { accent-color: var(--green-mid); width: 14px; height: 14px; }
+  .range-wrap { margin-top: 4px; }
+  .range-wrap input[type=range] { width: 100%; accent-color: var(--green-mid); margin-top: 6px; }
+  .range-val { font-size: 13px; font-weight: 600; color: var(--green-mid); margin-top: 4px; }
+  .clear-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 12px; cursor: pointer; color: var(--text-muted); width: 100%; }
+  .clear-btn:hover { background: var(--bg); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; padding: 20px 24px; min-width: 0; }
+  .content-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .results-count { font-size: 13px; color: var(--text-muted); }
+  .sort-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .sort-row select { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; background: var(--surface); color: var(--text); cursor: pointer; outline: none; }
+
+  /* ── GRID ── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+
+  /* ── PRODUCT CARD ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.15s, border-color 0.15s; }
+  .card:hover { border-color: #bbb; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .card-img { height: 150px; display: flex; align-items: center; justify-content: center; font-size: 64px; background: var(--bg); }
+  .card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .card-name { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--text); }
+  .card-brand { font-size: 12px; color: var(--text-hint); }
+  .card-price { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .rating { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
+  .stars { color: #C97A10; }
+
+  /* ── CARBON BADGE ── */
+  .c-badge { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: var(--radius-md); margin-top: 4px; }
+  .c-badge.low { background: var(--green-light); }
+  .c-badge.med { background: var(--amber-light); }
+  .c-badge.high { background: var(--red-light); }
+  .c-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .low .c-dot { background: var(--green-mid); }
+  .med .c-dot { background: var(--amber-mid); }
+  .high .c-dot { background: var(--red-mid); }
+  .c-info {}
+  .c-val { font-size: 13px; font-weight: 600; }
+  .low .c-val { color: var(--green-dark); }
+  .med .c-val { color: var(--amber-dark); }
+  .high .c-val { color: var(--red-dark); }
+  .c-label { font-size: 11px; font-weight: 500; }
+  .low .c-label { color: var(--green-mid); }
+  .med .c-label { color: var(--amber-mid); }
+  .high .c-label { color: var(--red-mid); }
+  .c-equiv { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── CARBON METER ── */
+  .c-meter { margin-top: 6px; }
+  .c-meter-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
+  .c-bar-bg { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .c-bar-fill { height: 100%; border-radius: 3px; }
+  .low .c-bar-fill { background: var(--green-mid); }
+  .med .c-bar-fill { background: var(--amber-mid); }
+  .high .c-bar-fill { background: var(--red-mid); }
+
+  /* ── CARD FOOTER ── */
+  .card-footer { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); }
+  .btn-add { flex: 1; background: var(--green-mid); color: #fff; border: none; border-radius: var(--radius-sm); padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn-add:hover { background: var(--green-dark); }
+  .btn-wish { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; cursor: pointer; color: var(--text-muted); transition: background 0.15s; }
+  .btn-wish:hover { background: var(--bg); color: #e25555; }
+  .btn-wish.wished { color: #e25555; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 64px 24px; color: var(--text-muted); font-size: 15px; }
+  .empty p { margin-top: 8px; font-size: 13px; color: var(--text-hint); }
+
+  /* ── CART DRAWER ── */
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 380px; max-width: 95vw; background: var(--surface); border-left: 1px solid var(--border); z-index: 201; transform: translateX(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .drawer-header h2 { font-size: 17px; font-weight: 600; }
+  .drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); line-height: 1; }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+  .drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+
+  .cart-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .cart-emoji { font-size: 30px; flex-shrink: 0; }
+  .cart-info { flex: 1; min-width: 0; }
+  .cart-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .cart-brand { font-size: 12px; color: var(--text-hint); }
+  .cart-co2-row { font-size: 12px; margin-top: 3px; }
+  .cart-qty { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qty-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 50%; width: 24px; height: 24px; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; color: var(--text); }
+  .qty-btn:hover { background: var(--border); }
+  .qty-num { font-size: 13px; font-weight: 600; min-width: 16px; text-align: center; }
+  .cart-price { font-size: 15px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+  .remove-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-hint); padding: 0 4px; }
+  .remove-btn:hover { color: var(--red-mid); }
+
+  .cart-total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+
+  .co2-summary { background: var(--green-light); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 14px; }
+  .co2-summary.over { background: var(--red-light); }
+  .co2-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .co2-title { font-size: 13px; font-weight: 600; color: var(--green-dark); }
+  .co2-summary.over .co2-title { color: var(--red-dark); }
+  .co2-num { font-size: 15px; font-weight: 700; color: var(--green-dark); }
+  .co2-summary.over .co2-num { color: var(--red-dark); }
+  .co2-progress-bg { height: 6px; border-radius: 3px; background: rgba(0,0,0,0.1); overflow: hidden; }
+  .co2-progress-fill { height: 100%; border-radius: 3px; background: var(--green-mid); transition: width 0.3s; }
+  .co2-summary.over .co2-progress-fill { background: var(--red-mid); }
+  .co2-hint { font-size: 11px; color: var(--green-mid); margin-top: 5px; }
+  .co2-summary.over .co2-hint { color: var(--red-mid); }
+
+  .checkout-btn { width: 100%; background: var(--green-mid); color: #fff; border: none; border-radius: var(--radius-md); padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; transition: background 0.15s; }
+  .checkout-btn:hover { background: var(--green-dark); }
+  .cart-empty { text-align: center; padding: 48px 16px; color: var(--text-muted); font-size: 14px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 300; transition: transform 0.25s ease, opacity 0.25s; opacity: 0; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .tagline { display: none; }
+    .topbar { padding: 0 14px; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="logo">eco<span>Kart</span></div>
+  <div class="tagline">Shop with your carbon in mind</div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Search products..." oninput="render()">
+    <button onclick="render()">Search</button>
+  </div>
+  <button class="cart-btn" onclick="openCart()">
+    🛒 Cart <span class="cart-count" id="cartCount">0</span>
+  </button>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h4>Category</h4>
+      <label class="filter-row"><input type="checkbox" value="snacks"      onchange="render()" checked> Snacks &amp; drinks</label>
+      <label class="filter-row"><input type="checkbox" value="personal"    onchange="render()" checked> Personal care</label>
+      <label class="filter-row"><input type="checkbox" value="clothing"    onchange="render()" checked> Clothing</label>
+      <label class="filter-row"><input type="checkbox" value="dairy"       onchange="render()" checked> Dairy</label>
+      <label class="filter-row"><input type="checkbox" value="electronics" onchange="render()" checked> Electronics</label>
+    </div>
+
+    <div class="sidebar-section">
+      <h4>Carbon level</h4>
+      <label class="filter-row"><input type="checkbox" value="low"  onchange="render()" checked> 🟢 Low (&lt;1 kg CO₂e)</label>
+      <label class="filter-row"><input type="checkbox" value="med"  onchange="render()" checked> 🟡 Medium (1–3 kg)</label>
+      <label class="filter-row"><input type="checkbox" value="high" onchange="render()" checked> 🔴 High (&gt;3 kg)</label>
+    </div>
+
+    <div class="sidebar-section">
+      <h4>Max CO₂e (kg)</h4>
+      <div class="range-wrap">
+        <input type="range" min="0.1" max="12" step="0.1" value="12" id="maxCo2" oninput="updateSlider()">
+        <div class="range-val" id="co2Val">Up to 12.0 kg</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h4>Price range (₹)</h4>
+      <div class="range-wrap">
+        <input type="range" min="0" max="20000" step="100" value="20000" id="maxPrice" oninput="updatePriceSlider()">
+        <div class="range-val" id="priceVal">Up to ₹20,000</div>
+      </div>
+    </div>
+
+    <button class="clear-btn" onclick="clearFilters()">Clear all filters</button>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="content-top">
+      <div class="results-count" id="resultsCount"></div>
+      <div class="sort-row">
+        Sort by:
+        <select id="sortSel" onchange="render()">
+          <option value="default">Relevance</option>
+          <option value="price-asc">Price: low → high</option>
+          <option value="price-desc">Price: high → low</option>
+          <option value="carbon-asc">Carbon: lowest first</option>
+          <option value="carbon-desc">Carbon: highest first</option>
+          <option value="rating">Top rated</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+
+<!-- CART DRAWER -->
+<div class="drawer-overlay" id="overlay" onclick="closeCart()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2>Your cart</h2>
+    <button class="drawer-close" onclick="closeCart()">×</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer" id="drawerFooter"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const PRODUCTS = [
+  { id:1,  name:"Packet of chips",        brand:"Lay's Classic 50g",         emoji:"🍟", price:30,    co2:0.35,  category:"snacks",      rating:4.2, reviews:1240 },
+  { id:2,  name:"Chocolate bar",          brand:"Cadbury Dairy Milk 50g",    emoji:"🍫", price:45,    co2:0.28,  category:"snacks",      rating:4.5, reviews:3800 },
+  { id:3,  name:"Can of soft drink",      brand:"Coca-Cola 330ml",           emoji:"🥤", price:40,    co2:0.17,  category:"snacks",      rating:4.3, reviews:5600 },
+  { id:4,  name:"Packaged biscuits",      brand:"Parle-G 100g",              emoji:"🍪", price:20,    co2:0.31,  category:"snacks",      rating:4.7, reviews:8900 },
+  { id:5,  name:"Plastic water bottle",   brand:"Kinley 1L",                 emoji:"💧", price:25,    co2:0.16,  category:"snacks",      rating:4.0, reviews:720  },
+  { id:6,  name:"Shampoo bottle",         brand:"Head & Shoulders 200ml",    emoji:"🧴", price:199,   co2:0.72,  category:"personal",    rating:4.4, reviews:2100 },
+  { id:7,  name:"Bar of soap",            brand:"Dove 100g",                 emoji:"🧼", price:60,    co2:0.14,  category:"personal",    rating:4.6, reviews:3200 },
+  { id:8,  name:"Toothpaste",             brand:"Colgate Strong Teeth 100g", emoji:"🪥", price:89,    co2:0.09,  category:"personal",    rating:4.5, reviews:2800 },
+  { id:9,  name:"Milk carton",            brand:"Amul Full Cream 500ml",     emoji:"🥛", price:35,    co2:0.63,  category:"dairy",       rating:4.5, reviews:4400 },
+  { id:10, name:"Cotton t-shirt",         brand:"H&M Basic Tee",             emoji:"👕", price:799,   co2:5.50,  category:"clothing",    rating:4.1, reviews:980  },
+  { id:11, name:"Denim jeans",            brand:"Levi's 511 Slim",           emoji:"👖", price:2999,  co2:11.00, category:"clothing",    rating:4.3, reviews:1560 },
+  { id:12, name:"Smartphone (daily use)", brand:"Samsung Galaxy A35",        emoji:"📱", price:18999, co2:0.30,  category:"electronics", rating:4.4, reviews:6700 },
+];
+
+const MAX_CO2 = 12;
+const DAILY_BUDGET = 5.5;
+let cart = {};
+let wishlist = new Set();
+
+function level(v) { return v < 1 ? "low" : v < 3 ? "med" : "high"; }
+function levelLabel(v) { return v < 1 ? "Low carbon" : v < 3 ? "Medium carbon" : "High carbon"; }
+function equiv(v) {
+  if (v < 0.2) return `≈ ${Math.round(v / 0.016 * 5)} min phone use`;
+  return `≈ driving ${(v / 0.21).toFixed(v >= 1 ? 0 : 1)} km`;
+}
+function stars(r) {
+  const full = Math.round(r);
+  return "★".repeat(full) + "☆".repeat(5 - full);
+}
+function fmt(n) { return n.toLocaleString("en-IN"); }
+
+function getFilters() {
+  const cats   = [...document.querySelectorAll('input[value="snacks"],input[value="personal"],input[value="clothing"],input[value="dairy"],input[value="electronics"]')].filter(c => c.checked).map(c => c.value);
+  const levels = [...document.querySelectorAll('input[value="low"],input[value="med"],input[value="high"]')].filter(c => c.checked).map(c => c.value);
+  return {
+    cats, levels,
+    maxCo2:  parseFloat(document.getElementById("maxCo2").value),
+    maxPrice:parseFloat(document.getElementById("maxPrice").value),
+    sort:    document.getElementById("sortSel").value,
+    search:  document.getElementById("searchInput").value.toLowerCase().trim(),
+  };
+}
+
+function updateSlider() {
+  const v = parseFloat(document.getElementById("maxCo2").value);
+  document.getElementById("co2Val").textContent = `Up to ${v.toFixed(1)} kg`;
+  render();
+}
+function updatePriceSlider() {
+  const v = parseFloat(document.getElementById("maxPrice").value);
+  document.getElementById("priceVal").textContent = `Up to ₹${fmt(v)}`;
+  render();
+}
+function clearFilters() {
+  document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = true);
+  document.getElementById("maxCo2").value = 12;
+  document.getElementById("maxPrice").value = 20000;
+  document.getElementById("searchInput").value = "";
+  document.getElementById("sortSel").value = "default";
+  document.getElementById("co2Val").textContent = "Up to 12.0 kg";
+  document.getElementById("priceVal").textContent = "Up to ₹20,000";
+  render();
+}
+
+function render() {
+  const f = getFilters();
+  let list = PRODUCTS.filter(p =>
+    f.cats.includes(p.category) &&
+    f.levels.includes(level(p.co2)) &&
+    p.co2 <= f.maxCo2 &&
+    p.price <= f.maxPrice &&
+    (!f.search || p.name.toLowerCase().includes(f.search) || p.brand.toLowerCase().includes(f.search))
+  );
+  if (f.sort === "price-asc")   list.sort((a,b) => a.price - b.price);
+  if (f.sort === "price-desc")  list.sort((a,b) => b.price - a.price);
+  if (f.sort === "carbon-asc")  list.sort((a,b) => a.co2 - b.co2);
+  if (f.sort === "carbon-desc") list.sort((a,b) => b.co2 - a.co2);
+  if (f.sort === "rating")      list.sort((a,b) => b.rating - a.rating);
+
+  document.getElementById("resultsCount").textContent = `${list.length} product${list.length !== 1 ? "s" : ""} found`;
+  const grid = document.getElementById("grid");
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty"><div style="font-size:40px">🌿</div><br>No products match your filters.<p>Try adjusting your filters or search.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(p => {
+    const lvl = level(p.co2);
+    const pct = Math.min(100, Math.round((p.co2 / MAX_CO2) * 100));
+    const inCart = cart[p.id] ? cart[p.id].qty : 0;
+    const wished = wishlist.has(p.id);
+    return `
+    <div class="card" id="card-${p.id}">
+      <div class="card-img">${p.emoji}</div>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-brand">${p.brand}</div>
+        <div class="card-price">₹${fmt(p.price)}</div>
+        <div class="rating"><span class="stars">${stars(p.rating)}</span> ${p.rating} (${fmt(p.reviews)})</div>
+        <div class="c-badge ${lvl}">
+          <div class="c-dot"></div>
+          <div class="c-info">
+            <div class="c-val">${p.co2.toFixed(2)} kg CO₂e</div>
+            <div class="c-label">${levelLabel(p.co2)}</div>
+            <div class="c-equiv">${equiv(p.co2)}</div>
+          </div>
+        </div>
+        <div class="c-meter ${lvl}">
+          <div class="c-meter-labels"><span>Carbon footprint</span><span>${p.co2.toFixed(2)} / ${MAX_CO2} kg</span></div>
+          <div class="c-bar-bg"><div class="c-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-add" onclick="addToCart(${p.id})">${inCart > 0 ? `In cart (${inCart})` : "Add to cart"}</button>
+        <button class="btn-wish ${wished ? "wished" : ""}" onclick="toggleWish(${p.id})" title="Wishlist">${wished ? "♥" : "♡"}</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function addToCart(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (cart[id]) cart[id].qty++;
+  else cart[id] = { ...p, qty: 1 };
+  updateCartCount();
+  render();
+  showToast(`${p.emoji} ${p.name} added to cart`);
+}
+
+function removeFromCart(id) {
+  delete cart[id];
+  updateCartCount();
+  renderCart();
+  render();
+}
+
+function changeQty(id, delta) {
+  if (!cart[id]) return;
+  cart[id].qty += delta;
+  if (cart[id].qty <= 0) { removeFromCart(id); return; }
+  updateCartCount();
+  renderCart();
+  render();
+}
+
+function toggleWish(id) {
+  if (wishlist.has(id)) wishlist.delete(id);
+  else wishlist.add(id);
+  render();
+}
+
+function updateCartCount() {
+  const total = Object.values(cart).reduce((s, x) => s + x.qty, 0);
+  document.getElementById("cartCount").textContent = total;
+}
+
+function openCart() {
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+  renderCart();
+}
+function closeCart() {
+  document.getElementById("overlay").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+}
+
+function renderCart() {
+  const items = Object.values(cart);
+  const body = document.getElementById("drawerBody");
+  const foot = document.getElementById("drawerFooter");
+
+  if (!items.length) {
+    body.innerHTML = `<div class="cart-empty">🛒<br><br>Your cart is empty.<br><span style="font-size:12px;color:#999">Add some products to see your carbon footprint!</span></div>`;
+    foot.innerHTML = "";
+    return;
+  }
+
+  const totalPrice = items.reduce((s, x) => s + x.price * x.qty, 0);
+  const totalCo2   = items.reduce((s, x) => s + x.co2 * x.qty, 0);
+  const pct        = Math.min(100, Math.round((totalCo2 / DAILY_BUDGET) * 100));
+  const over       = totalCo2 > DAILY_BUDGET;
+
+  body.innerHTML = items.map(x => `
+    <div class="cart-item">
+      <div class="cart-emoji">${x.emoji}</div>
+      <div class="cart-info">
+        <div class="cart-name">${x.name}</div>
+        <div class="cart-brand">${x.brand}</div>
+        <div class="cart-co2-row" style="color:${level(x.co2)==="low"?"var(--green-mid)":level(x.co2)==="med"?"var(--amber-mid)":"var(--red-mid)"}">
+          ${(x.co2 * x.qty).toFixed(2)} kg CO₂e
+        </div>
+        <div class="cart-qty">
+          <button class="qty-btn" onclick="changeQty(${x.id},-1)">−</button>
+          <span class="qty-num">${x.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${x.id},1)">+</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="cart-price">₹${fmt(x.price * x.qty)}</div>
+        <button class="remove-btn" onclick="removeFromCart(${x.id})">🗑</button>
+      </div>
+    </div>`).join("");
+
+  foot.innerHTML = `
+    <div class="cart-total-row"><span>Total</span><span>₹${fmt(totalPrice)}</span></div>
+    <div class="co2-summary ${over ? "over" : ""}">
+      <div class="co2-top">
+        <span class="co2-title">Cart carbon footprint</span>
+        <span class="co2-num">${totalCo2.toFixed(2)} kg CO₂e</span>
+      </div>
+      <div class="co2-progress-bg"><div class="co2-progress-fill" style="width:${pct}%"></div></div>
+      <div class="co2-hint">
+        ${over
+          ? `⚠ ${(totalCo2 - DAILY_BUDGET).toFixed(2)} kg over the daily sustainable budget (${DAILY_BUDGET} kg)`
+          : `✓ Within daily sustainable budget of ${DAILY_BUDGET} kg CO₂e`}
+      </div>
+    </div>
+    <button class="checkout-btn">Proceed to checkout →</button>`;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+render();
+</script>
+</body>
+</html>
